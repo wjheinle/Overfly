@@ -5,7 +5,7 @@ Run: python3 overfly_server.py
 Then open: http://localhost:7477
 """
 
-import json, math, os, sys, threading, subprocess, time, webbrowser
+import json, math, os, sys, threading, subprocess, time, webbrowser, requests as req_lib
 from datetime import datetime
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib.request import urlopen, Request
@@ -79,37 +79,53 @@ def bearing_label(lat1,lon1,lat2,lon2):
 
 # ── Fetch aircraft ────────────────────────────────────────────────────────────
 def fetch_aircraft(lat, lon, radius_nm):
-    url = f"https://api.adsb.one/v2/point/{lat}/{lon}/{radius_nm}"
-    req = Request(url, headers={
-        "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1",
-        "Accept": "application/json, */*",
+    urls = [
+        f"https://api.adsb.one/v2/point/{lat}/{lon}/{radius_nm}",
+        f"https://opendata.adsb.fi/api/v2/aircraft?lat={lat}&lon={lon}&radius={radius_nm}",
+        f"https://api.adsb.fi/v1/aircraft?lat={lat}&lon={lon}&radius={radius_nm}",
+    ]
+    session = req_lib.Session()
+    session.headers.update({
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+        "Accept": "application/json, text/plain, */*",
         "Accept-Language": "en-US,en;q=0.9",
-        "Referer": "https://globe.adsb.one/",
-        "Origin": "https://globe.adsb.one",
+        "Accept-Encoding": "gzip, deflate, br",
+        "Connection": "keep-alive",
+        "Sec-Fetch-Dest": "empty",
+        "Sec-Fetch-Mode": "cors",
+        "Sec-Fetch-Site": "cross-site",
     })
-    with urlopen(req, timeout=12) as r:
-        data = json.loads(r.read())
-    aircraft = []
-    for ac in data.get("ac", []):
-        alt = ac.get("alt_baro","ground")
-        if alt == "ground": continue
-        if not ac.get("lat") or not ac.get("lon"): continue
-        reg = (ac.get("r","") or "").strip()
-        aircraft.append({
-            "icao":     ac.get("hex",""),
-            "callsign": (ac.get("flight","") or reg or ac.get("hex","")).strip(),
-            "reg":      reg,
-            "type":     (ac.get("t","") or "").strip(),
-            "lat":      ac.get("lat"),
-            "lon":      ac.get("lon"),
-            "altFt":    int(alt) if isinstance(alt,(int,float)) else None,
-            "spdKt":    int(ac.get("gs",0)) if ac.get("gs") else None,
-            "country":  country_from_reg(reg),
-            "distNm":   round(haversine_nm(lat,lon,ac["lat"],ac["lon"]),1),
-            "dir":      bearing_label(lat,lon,ac["lat"],ac["lon"]),
-        })
-    aircraft.sort(key=lambda a: a["altFt"] or 0, reverse=True)
-    return aircraft
+    last_err = None
+    for url in urls:
+        try:
+            r = session.get(url, timeout=12)
+            r.raise_for_status()
+            data = r.json()
+            aircraft = []
+            for ac in data.get("ac", data.get("aircraft", [])):
+                alt = ac.get("alt_baro", "ground")
+                if alt == "ground": continue
+                if not ac.get("lat") or not ac.get("lon"): continue
+                reg = (ac.get("r", "") or "").strip()
+                aircraft.append({
+                    "icao":     ac.get("hex", ""),
+                    "callsign": (ac.get("flight", "") or reg or ac.get("hex", "")).strip(),
+                    "reg":      reg,
+                    "type":     (ac.get("t", "") or "").strip(),
+                    "lat":      ac.get("lat"),
+                    "lon":      ac.get("lon"),
+                    "altFt":    int(alt) if isinstance(alt, (int, float)) else None,
+                    "spdKt":    int(ac.get("gs", 0)) if ac.get("gs") else None,
+                    "country":  country_from_reg(reg),
+                    "distNm":   round(haversine_nm(lat, lon, ac["lat"], ac["lon"]), 1),
+                    "dir":      bearing_label(lat, lon, ac["lat"], ac["lon"]),
+                })
+            aircraft.sort(key=lambda a: a["altFt"] or 0, reverse=True)
+            return aircraft
+        except Exception as e:
+            last_err = e
+            continue
+    raise Exception(f"All sources failed: {last_err}")
 
 # ── HTTP handler ──────────────────────────────────────────────────────────────
 HTML = None  # loaded once
