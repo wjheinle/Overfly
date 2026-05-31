@@ -395,9 +395,13 @@ function doAlert(ac){
   if(muted)return;
   const mode=document.getElementById('alertSel').value;
   if(mode==='none')return;
+  // Skip private/small aircraft — only announce known airlines
   const airline=ac.airline||'Private';
+  if(airline==='Private')return;
+  // Only announce if we have an origin city
   const origin=ac.origin||null;
-  const msg=origin?airline+', '+origin:airline;
+  if(!origin)return;
+  const msg=airline+', '+origin;
   if(mode==='ding'||mode==='both')playDing();
   if(mode==='voice'||mode==='both')playVoice(msg);
   showToast(ac,msg);
