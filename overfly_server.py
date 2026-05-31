@@ -91,13 +91,11 @@ def fetch_aircraft(lat, lon, radius_nm):
         "Accept-Language": "en-US,en;q=0.9",
         "Accept-Encoding": "gzip, deflate, br",
         "Connection": "keep-alive",
-        "Sec-Fetch-Dest": "empty",
-        "Sec-Fetch-Mode": "cors",
-        "Sec-Fetch-Site": "cross-site",
     })
     last_err = None
     for url in urls:
         try:
+            time.sleep(1)
             r = session.get(url, timeout=12)
             r.raise_for_status()
             data = r.json()
