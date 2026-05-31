@@ -395,16 +395,42 @@ function doAlert(ac){
   if(muted)return;
   const mode=document.getElementById('alertSel').value;
   if(mode==='none')return;
-  // Skip private/small aircraft — only announce known airlines
   const airline=ac.airline||'Private';
   if(airline==='Private')return;
-  // Only announce if we have an origin city
   const origin=ac.origin||null;
   if(!origin)return;
-  const msg=airline+', '+origin;
-  if(mode==='ding'||mode==='both')playDing();
-  if(mode==='voice'||mode==='both')playVoice(msg);
-  showToast(ac,msg);
+  // Pause between airline and city using two utterances
+  const mode2=mode;
+  if(mode2==='ding'||mode2==='both')playDing();
+  if(mode2==='voice'||mode2==='both'){
+    if(!window.speechSynthesis)return;
+    speechSynthesis.cancel();
+    const u1=new SpeechSynthesisUtterance(airline);
+    u1.rate=0.88;u1.pitch=1.0;u1.volume=1.0;
+    const u2=new SpeechSynthesisUtterance(origin);
+    u2.rate=0.88;u2.pitch=1.0;u2.volume=1.0;
+    speechSynthesis.speak(u1);
+    speechSynthesis.speak(u2);
+  }
+  showToast(ac,airline+', '+origin);
+}
+
+function pickBestAircraft(newOnes){
+  // Filter to known airlines with origin only
+  const eligible=newOnes.filter(ac=>{
+    const airline=ac.airline||'Private';
+    return airline!=='Private' && ac.origin;
+  });
+  if(!eligible.length)return null;
+  // Score: prioritize altitude (larger plane) then closeness
+  eligible.sort((a,b)=>{
+    const altA=a.altFt||0, altB=b.altFt||0;
+    const distA=a.distNm||999, distB=b.distNm||999;
+    // Weight altitude heavily, distance as tiebreaker
+    return (altB - altA) || (distA - distB);
+  });
+  return eligible[0];
+}
 }
 
 // ── Location ──────────────────────────────────────────────────────────────────
