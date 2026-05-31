@@ -80,7 +80,13 @@ def bearing_label(lat1,lon1,lat2,lon2):
 # ── Fetch aircraft ────────────────────────────────────────────────────────────
 def fetch_aircraft(lat, lon, radius_nm):
     url = f"https://api.adsb.one/v2/point/{lat}/{lon}/{radius_nm}"
-    req = Request(url, headers={"User-Agent":"OVERFLY/2.0"})
+    req = Request(url, headers={
+        "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1",
+        "Accept": "application/json, */*",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Referer": "https://globe.adsb.one/",
+        "Origin": "https://globe.adsb.one",
+    })
     with urlopen(req, timeout=12) as r:
         data = json.loads(r.read())
     aircraft = []
