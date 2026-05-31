@@ -139,7 +139,8 @@ class Handler(BaseHTTPRequestHandler):
                 aircraft = fetch_aircraft(lat, lon, radius)
                 self.send_json({"ok": True, "aircraft": aircraft, "count": len(aircraft)})
             except Exception as e:
-                self.send_json({"ok": False, "error": str(e)}, 500)
+                import traceback
+                self.send_json({"ok": False, "error": str(e), "detail": traceback.format_exc()}, 500)
 
         elif self.path.startswith("/speak"):
             from urllib.parse import urlparse, parse_qs, unquote
