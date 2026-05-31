@@ -80,9 +80,9 @@ def bearing_label(lat1,lon1,lat2,lon2):
 # ── Fetch aircraft ────────────────────────────────────────────────────────────
 def fetch_aircraft(lat, lon, radius_nm):
     urls = [
+        f"https://opendata.adsb.fi/api/v3/lat/{lat}/lon/{lon}/dist/{radius_nm}",
         f"https://api.adsb.one/v2/point/{lat}/{lon}/{radius_nm}",
-        f"https://opendata.adsb.fi/api/v2/aircraft?lat={lat}&lon={lon}&radius={radius_nm}",
-        f"https://api.adsb.fi/v1/aircraft?lat={lat}&lon={lon}&radius={radius_nm}",
+        f"https://opendata.adsb.fi/api/v2/lat/{lat}/lon/{lon}/dist/{radius_nm}",
     ]
     session = req_lib.Session()
     session.headers.update({
