@@ -89,7 +89,7 @@ def fetch_aircraft(lat, lon, radius_nm):
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
         "Accept": "application/json, text/plain, */*",
         "Accept-Language": "en-US,en;q=0.9",
-        "Accept-Encoding": "gzip, deflate, br",
+        "Accept-Encoding": "identity",
         "Connection": "keep-alive",
     })
     last_err = None
@@ -97,6 +97,7 @@ def fetch_aircraft(lat, lon, radius_nm):
         try:
             time.sleep(1)
             r = session.get(url, timeout=12)
+            print(f"URL: {url} | Status: {r.status_code} | Length: {len(r.content)} | Preview: {r.text[:200]}", flush=True)
             r.raise_for_status()
             data = r.json()
             aircraft = []
@@ -122,6 +123,7 @@ def fetch_aircraft(lat, lon, radius_nm):
             return aircraft
         except Exception as e:
             last_err = e
+            print(f"FAILED {url}: {e}", flush=True)
             continue
     raise Exception(f"All sources failed: {last_err}")
 
