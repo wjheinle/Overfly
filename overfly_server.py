@@ -567,6 +567,7 @@ function startScan() {
   scanning = true;
   document.getElementById('scanBtn').style.display = 'none';
   document.getElementById('stopBtn').style.display = '';
+  resetSleepTimer();
   doScan();
   scheduleNext();
 }
