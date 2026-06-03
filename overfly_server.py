@@ -584,6 +584,20 @@ function stopScan() {
   addLog('Tracking stopped.');
 }
 
+var sleepTimer = null;
+var SLEEP_AFTER_MINS = 30;
+
+function resetSleepTimer() {
+  clearTimeout(sleepTimer);
+  sleepTimer = setTimeout(function() {
+    if (scanning) {
+      stopScan();
+      addLog('Auto-sleep after ' + SLEEP_AFTER_MINS + ' min inactivity. Tap SCAN to resume.');
+      document.getElementById('locSub').textContent = 'Sleeping — tap SCAN to resume';
+    }
+  }, SLEEP_AFTER_MINS * 60 * 1000);
+}
+
 function scheduleNext() {
   if (!scanning) return;
   var secs = parseInt(document.getElementById('refSel').value);
